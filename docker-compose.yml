@@ -1,0 +1,95 @@
+version: '3.9'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.2.1
+    init: true
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zookeeper:2888:3888
+      ZOOKEEPER_CLIENT_PORT: 2181
+    labels:
+      - "com.development=local-mqtt"
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'zoo1' ]
+  kafka:
+    image: confluentinc/cp-kafka:7.2.1
+    init: true
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - '9092:9092'
+      - '9999:9999'
+    env_file:
+      - ./env_files/.env.kafka
+    volumes:
+      - ./kafka-entrypoint.sh:/tmp/kafka-entrypoint.sh
+    depends_on:
+      - zookeeper
+    links:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+    labels:
+      - "com.development=local-mqtt"
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'kafka' ]
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.5.0
+    init: true
+    container_name: kafka-ui
+    ports:
+      - '8090:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+    links:
+      - kafka
+    labels:
+      - "com.development=local-mqtt"
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'kafka-ui' ]
+  redis:
+    image: redis:4.0.10
+    init: true
+    container_name: redis
+    ports:
+      - '6379:6379'
+    labels:
+      - "com.development=local-mqtt"
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'redis' ]
+  mongodb:
+    image: mongo:7.0
+    init: true
+    container_name: mongodb
+    environment:
+      - PUID=1000
+      - GUID=1000
+      - MONGO_INITDB_DATABASE=admin
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    labels:
+      - "com.development=local-mqtt"
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'mongodb' ]
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'Monitoring'
+      MYSQL_USER: 'root1'
+      MYSQL_PASSWORD: 'root1'
+      MYSQL_ROOT_PASSWORD: 'root1'
+      MYSQL_TCP_PORT: 3306
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    volumes:
+      - /volume.:/var/lib/mysql
+    profiles: [ 'local_images', 'remote_images', 'base_services', 'mqtt' ]
