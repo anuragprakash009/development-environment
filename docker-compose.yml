@@ -93,3 +93,11 @@ services:
     volumes:
       - /volume.:/var/lib/mysql
     profiles: [ 'local_images', 'remote_images', 'base_services', 'mqtt' ]
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./volume/rabbitmq:/var/lib/rabbitmq
+      - ./env_files/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
